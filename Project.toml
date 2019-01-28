@@ -1,0 +1,4 @@
+name = "dlgo.jl"
+uuid = "26701830-2296-11e9-0d24-29b36f30c1d4"
+authors = ["Mauricio Benjamin Garcia Tec <garciatec.mauricio@outlook.com>"]
+version = "0.1.0"
