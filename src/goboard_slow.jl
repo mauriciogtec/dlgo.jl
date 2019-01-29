@@ -14,14 +14,14 @@ mutable struct Board
     Board(num_rows::Int, num_cols::Int) = begin
         @assert num_rows >= 1
         @assert num_cols >= 1
-        new(num_rows, num_cols, [nothing for i in 1:num_rows, j in 1:num_cols])
+        new(num_rows, num_cols, Union{Nothing, GoString}[nothing for i in 1:num_rows, j in 1:num_cols])
     end
 end
 
-Base.getindex(board::Board, p::Point)::GoString = board._grid[p.row, p.col]
-Base.setindex!(board::Board, p::Point, str::Union{Nothing, GoString})::Nothing = (board._grid[p.row, p.col] = str)
+Base.getindex(board::Board, p::Point)::Union{Nothing, GoString} = board._grid[p.row, p.col]
+Base.setindex!(board::Board, str::Union{Nothing, GoString}, p::Point)::Nothing = (board._grid[p.row, p.col] = str; return)
 Base.:(==)(board1::Board, board2::Board)::Bool = (board1._grid == board2._grid)
-is_on_grid(board::Board, p::Point)::Bool = (1 <= p.row <= board.num_row) && (1 <= p.col <= board.num_cols)
+is_on_grid(board::Board, p::Point)::Bool = (1 <= p.row <= board.num_rows) && (1 <= p.col <= board.num_cols)
 
 function remove_string!(board::Board, string::GoString)::Nothing
     for point in string.stones
@@ -57,7 +57,7 @@ function place_stone!(board::Board, player::Player, point::Point)::Nothing
             end
         end
     end
-    newstring = GoString(player, [point], liberties)
+    newstring = GoString(player, Set([point]), Set(liberties))
 
     for same_color_string in adjacent_same_color
         merge!(newstring, same_color_string)
