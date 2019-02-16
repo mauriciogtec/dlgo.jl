@@ -1,12 +1,14 @@
 import Base: show
 
 @enum TerritoryType begin
-    black_territory = 1
-    white_territory = 2
-    dame = 3
+    black_stone = 1
+    white_stone = 2
+    black_territory = 3
+    white_territory = 4
+    dame = 5
 end
 
-Status = Union{TerritoryType, Player}
+Status = Union{TerritoryType, Int}
 
 struct Territory
     num_black_territory::Int
@@ -25,9 +27,9 @@ struct Territory
         dame_points = Set()
 
         for (point, status) in territorymap
-            if status === black
+            if status === black_stone
                 num_black_stones += 1
-            elseif status === white
+            elseif status === white_stone
                 num_white_stones += 1
             elseif status === black_territory
                 num_black_territory += 1
@@ -50,14 +52,12 @@ struct GameResult
     komi::Float64
 end
 
-function winner(result::GameResult)
-    m = result.b  - result.w - result.komi
-    w = (m > 0) ? black : white
-    w, m
+function margin(result::GameResult)
+    result.b  - result.w - result.komi
 end
 
 function Base.show(io::IO, result::GameResult) 
-    w, m = winner(result)
+    m = margin(result)
     if m > 0
         print(io, "B+$m")
     else
@@ -69,18 +69,18 @@ function evaluate_territory(board::Board)
     territorymap = Set{Tuple{Point, Status}}()
     for r in 1:board.num_rows
         for c in 1:board.num_cols
-            point = Point(r, c)
+            point = (row=r, col=c)
 
             (point in territorymap) && continue 
 
-            stone = board[point]
-            if stone !== nothing  
-                push!(territorymap, (point, stone.color))
+            string = board[point]
+            if string.color != 0  
+                push!(territorymap, (point, string.color == 1 ? white_stone : black_stone))
             else
                 group, nbrs = collect_region(point, board)
                 if length(nbrs) == 1
-                    nbr_stone = pop!(nbrs)
-                    status = (nbr_stone.color === black) ? territory_black : territory_white
+                    nbr_string = pop!(nbrs)
+                    status = (nbr_string.color == -1) ? territory_black : territory_white
                 else
                     status = dame  
                 end 

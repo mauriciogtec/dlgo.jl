@@ -3,7 +3,7 @@ using Revise
 using Pkg; 
 Pkg.activate(".")
 
-using dlgo: RandomBot, Board, GameState, black, white
+using dlgo: RandomBot, Board, GameState
 using dlgo: new_game, apply_move, play, is_over, select_move
 using dlgo: print_board, point_from_coords, print_move
 
@@ -16,11 +16,11 @@ function main()
         println("\u1b[2J")
         print_board(game)
 
-        if game.next_player == black
+        if game.next_player == -1 # black
             print("-- ")
             human_move = readline(stdin)
             point = point_from_coords(strip(human_move))
-            while game.board[point] ≢ nothing
+            while game.board[point].color != 0
                 println(game.board[point])
                 human_move = readline(stdin)
                 point = point_from_coords(strip(human_move))            
@@ -35,6 +35,4 @@ function main()
 end
 
 
-if PROGRAM_FILE ==  @__FILE__ 
-    main()
-end
+main()

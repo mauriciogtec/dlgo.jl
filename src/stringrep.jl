@@ -6,18 +6,17 @@ const BOARDCOLS = "ABCDEFGHJKLMNOPQRST"
 const BOARDCOLSIDX = Dict(letter => i for (i, letter) in enumerate(BOARDCOLS))
 
 function stone_to_string(x::GoString)::String 
-    if x.color ≡ black
+    if x.color == -1
         return "x"
-    elseif x.color ≡ white
+    elseif x.color == 1
         return "o"
     else
-        throw(ArgumentError)
+        return "."
     end
 end
-stone_to_string(x::Nothing)::String = "."
 
 
-function print_move(player::Player, move::Move)::Nothing
+function print_move(player::Int, move::Move)::Nothing
     move_str = if move.is_pass
         "passes"
     elseif move.is_resign
@@ -34,7 +33,7 @@ function print_board(board::Board)
         bump = (r <= 9) ? " " : ""
         line = " "
         for c in 1:board.num_cols
-            stone = board[Point(r, c)]
+            stone = board[(row=r, col=c)]
             line *= stone_to_string(stone)
         end
         println(bump, r, line)
@@ -47,8 +46,8 @@ print_board(game_state::GameState) = print_board(game_state.board)
 
 function point_from_coords(coords::AbstractString)::Point
     @assert length(coords) >= 2
-    col = BOARDCOLSIDX[coords[1]]
-    row = parse(Int, coords[2:end])
-    return Point(row, col)
+    r = parse(Int, coords[2:end])
+    c = BOARDCOLSIDX[coords[1]]
+    return (row=r, col=c)
 end
 # end

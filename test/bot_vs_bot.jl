@@ -4,7 +4,7 @@ Pkg.activate(".")
 
 using ArgParse
 
-using dlgo: RandomBot, Board, GameState, black, white
+using dlgo: RandomBot, Board, GameState
 using dlgo: new_game, apply_move, play, is_over, select_move
 using dlgo: print_board, point_from_coords, print_move, compute_game_result
 
@@ -31,9 +31,6 @@ function parse_commandline()
     return parse_args(s, as_symbols=true)
 end
 
-BOARD_SIZE = 5
-NUM_GAMES = 100
-
 function main(board_size::Int, num_games::Int, komi::Float64, verbose::Bool)
     verbose && println("Playing ", num_games, " game(s) with board size ", board_size, "x", board_size)
     for it in 1:num_games
@@ -42,7 +39,7 @@ function main(board_size::Int, num_games::Int, komi::Float64, verbose::Bool)
         bot_white = RandomBot()
         nmoves = 0
         while !is_over(game)
-            bot = (game.next_player == black) ? bot_black : bot_white
+            bot = (game.next_player == -1) ? bot_black : bot_white
             move = select_move(bot, game)
             game = apply_move(game, move)
             nmoves += 1
