@@ -3,8 +3,9 @@ using Pkg;
 Pkg.activate(".")
 
 using ArgParse
+using Profile
 
-using dlgo: RandomBot, Board, GameState
+using dlgo: RandomBot, Board, GameState, black, white
 using dlgo: new_game, apply_move, play, is_over, select_move
 using dlgo: print_board, point_from_coords, print_move, compute_game_result
 
@@ -39,16 +40,17 @@ function main(board_size::Int, num_games::Int, komi::Float64, verbose::Bool)
         bot_white = RandomBot()
         nmoves = 0
         while !is_over(game)
-            bot = (game.next_player == -1) ? bot_black : bot_white
+            bot = (game.next_player == black) ? bot_black : bot_white
             move = select_move(bot, game)
             game = apply_move(game, move)
             nmoves += 1
         end
-        result = compute_game_result(game, komi)
-        verbose && println("Finished game ", it, " in " , nmoves, " moves with result ", result)
-        verbose && print_board(game.board)
+        # result = compute_game_result(game, komi)
+        # verbose && println("Finished game ", it, " in " , nmoves, " moves with result ", result)
+        # verbose && print_board(game.board)
     end
 end
 
 args = parse_commandline()
-main(args[:board_size], args[:num_games], args[:komi], args[:verbose])
+@time @profile main(args[:board_size], args[:num_games], args[:komi], args[:verbose])
+Profile.print(format=:flat)
