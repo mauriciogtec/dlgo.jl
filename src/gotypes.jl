@@ -1,7 +1,5 @@
-# export Player, Point, Move, GoString, black, white
-# export other, nbrs, play, pass_turn, resign, remove_liberty!, add_liberty!, num_liberties, merge!
-
 using Base.Enums
+
 @enum Player begin
     black = 1
     white = 2
@@ -18,7 +16,7 @@ up(p::Point)::Point = Point(p.row - 1, p.col)
 down(p::Point)::Point = Point(p.row + 1, p.col)
 left(p::Point)::Point = Point(p.row, p.col - 1)
 right(p::Point)::Point = Point(p.row, p.col + 1)
-nbrs(p::Point)::Point = [up(p), down(p), left(p), right(p)]
+nbrs(p::Point)::Vector{Point} = Point[up(p), down(p), left(p), right(p)]
 
 # ----------------------
 struct Move
@@ -43,14 +41,16 @@ struct GoString
     liberties::Set{Point}
 end
 
-remove_liberty!(str::GoString, p::Point)::Nothing = delete!(str.liberties, p)
-add_liberty!(str::GoString, p::Point)::Nothing = push!(str.liberties, p)
+remove_liberty!(str::GoString, p::Point)::Nothing = (delete!(str.liberties, p); nothing)
+add_liberty!(str::GoString, p::Point)::Nothing = (push!(str.liberties, p); nothing)
 num_liberties(str::GoString)::Int = length(str.liberties)
 
-function merge!(receiver::GoString, adder::GoString)::Nothing
-    @assert receiver.color == adder.color
-    union!(receiver.stones, adder.stones)
-    union!(receiver.liberties, setdiff(adder.liberties, receiver.stones))
+function merge!(receiver::GoString, sender::GoString)::Nothing
+    @assert receiver.color ≡ sender.color
+    union!(receiver.stones, sender.stones)
+    union!(receiver.liberties, sender.liberties)
+    setdiff!(receiver.liberties, receiver.stones)
+    nothing
 end
 
 # end

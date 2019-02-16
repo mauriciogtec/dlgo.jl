@@ -12,7 +12,7 @@ function is_point_an_eye(board::Board, point::Point, color::Player)::Bool
     end
     for nbr in nbrs(point)
         if is_on_grid(board, nbr)
-            if board[nbr].color ≢ color
+            if board[nbr] ≢ nothing && board[nbr].color ≢ color
                 return false
             end
         end
@@ -28,7 +28,7 @@ function is_point_an_eye(board::Board, point::Point, color::Player)::Bool
 
     for corner in corners
         if is_on_grid(board, corner)
-            if board[corner].color ≡ color
+            if board[corner] ≢ nothing && board[corner].color ≡ color
                 friendly_corners += 1
             end
         else
@@ -52,8 +52,8 @@ struct RandomBot <: AbstractAgent end
 """
 function select_move(agent::RandomBot, game_state::GameState)::Move
     candidates = Point[]
-    for r in 1:game_state.num_rows
-        for c in 1:game_state.num_cols
+    for r in 1:game_state.board.num_rows
+        for c in 1:game_state.board.num_cols
             candidate = Point(r, c)
             if is_valid_move(game_state, play(candidate)) && 
                     !is_point_an_eye(game_state.board, candidate, game_state.next_player)

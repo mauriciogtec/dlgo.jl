@@ -2,38 +2,45 @@
 # using ..gotypes
 
 import Base: getindex, setindex!, ==
-
 export Board, GameState
 export getindex, setindex!, ==, is_on_grid, remove_string!, place_stone!, new_game, is_over, apply_move, is_valid_move
-
 
 mutable struct Board
     num_rows::Int
     num_cols::Int
     _grid::Matrix{<:Union{Nothing, GoString}}
+    _hash::Int
     Board(num_rows::Int, num_cols::Int) = begin
         @assert num_rows >= 1
         @assert num_cols >= 1
-        new(num_rows, num_cols, Union{Nothing, GoString}[nothing for i in 1:num_rows, j in 1:num_cols])
+        emptymat = Union{Nothing, GoString}[nothing for i in 1:num_rows, j in 1:num_cols]
+        new(num_rows, num_cols, emptymat, EMPTY_BOARD)
     end
 end
 
 Base.getindex(board::Board, p::Point)::Union{Nothing, GoString} = board._grid[p.row, p.col]
 Base.setindex!(board::Board, str::Union{Nothing, GoString}, p::Point)::Nothing = (board._grid[p.row, p.col] = str; return)
 Base.:(==)(board1::Board, board2::Board)::Bool = (board1._grid == board2._grid)
+
 is_on_grid(board::Board, p::Point)::Bool = (1 <= p.row <= board.num_rows) && (1 <= p.col <= board.num_cols)
+
+updatehash!(board::Board, point::Point, player::Player)::Nothing = (board._hash ⊻= HASH_CODE[(point, player)]; nothing) # xor hash
+zobristhash(board::Board)::Int = board._hash
 
 function remove_string!(board::Board, string::GoString)::Nothing
     for point in string.stones
         for nbr in nbrs(point)
-            nbr_string = board[nbr]
-            if nbr_string ≢ nothing
-                continue
-            elseif nbr_string ≢ string
-                add_liberty!(nbr_string, point)
+            if is_on_grid(board, nbr)
+                nbr_string = board[nbr]
+                if nbr_string ≡ nothing
+                    continue
+                elseif nbr_string ≢ string
+                    add_liberty!(nbr_string, point)
+                end
             end
-            board[nbr] = nothing  
         end
+        board[point] = nothing
+        updatehash!(board, point, string.color)
     end
 end
 
@@ -41,34 +48,37 @@ function place_stone!(board::Board, player::Player, point::Point)::Nothing
     @assert is_on_grid(board, point)
     @assert board[point] ≡ nothing
 
-    adjacent_same_color = Point[]
-    adjacent_opposite_color = Point[]
-    liberties = Point[]
+    adjacent_same_color = Set{GoString}()
+    adjacent_opposite_color = Set{GoString}()
+    liberties = Set{Point}()
 
     for nbr in nbrs(point)
         if is_on_grid(board, nbr)
             nbr_string = board[nbr]
             if nbr_string ≡ nothing
                 push!(liberties, nbr)
-            elseif nbr_string.color ≡ Player && !(nbr_string in adjacent_same_color)
+            elseif nbr_string.color ≡ player
                 push!(adjacent_same_color, nbr_string)
-            elseif !(nbr_string.color ≡ Player) && !(nbr_string in adjacent_opposite_color)
+            else
                 push!(adjacent_opposite_color, nbr_string)
             end
         end
     end
+
     newstring = GoString(player, Set([point]), Set(liberties))
 
     for same_color_string in adjacent_same_color
         merge!(newstring, same_color_string)
     end
+
     for newstring_point in newstring.stones
         board[newstring_point] = newstring
     end
+    
+    updatehash!(board, point, player)
+    
     for opposite_color_string in adjacent_opposite_color
-        remove_liberty!(opposite_color_string, newstring)
-    end
-    for opposite_color_string in adjacent_opposite_color
+        remove_liberty!(opposite_color_string, point)
         if num_liberties(opposite_color_string) == 0 
             remove_string!(board, opposite_color_string)
         end
@@ -79,8 +89,24 @@ end
 struct GameState
     board::Board
     next_player::Player
-    previous_state::Union{Nothing, GameState}
+    prev::Union{Nothing, GameState}
+    prev_hashes::Set{Tuple{Player, Int}}
     last_move::Union{Nothing, Move}
+    
+    GameState(
+            board::Board, 
+            next_player::Player, 
+            prev::Union{Nothing, GameState}, 
+            last_move::Union{Nothing, Move}
+    ) = begin
+        ph = if (prev ≡ nothing)
+            Set{Tuple{Player, Int}}() 
+        else 
+            newstate = Set([(prev.next_player, zobristhash(prev.board))])
+            union(prev.prev_hashes, newstate)
+        end
+        new(board, next_player, prev, ph, last_move)
+    end
 end
 
 new_game(num_rows::Int, num_cols::Int)::GameState = GameState(Board(num_rows, num_cols), black, nothing, nothing)
@@ -94,7 +120,7 @@ function is_over(game_state::GameState)::Bool
         return true
     end
 
-    second_last_move = game_state.last_move.laste_move
+    second_last_move = game_state.prev.last_move
     if second_last_move ≡ nothing
         return false
     end
@@ -116,9 +142,9 @@ end
 function is_move_self_capture(game_state::GameState, player::Player, move::Move)::Bool
     !move.is_play && (return false)
     next_board = deepcopy(game_state.board)
-    place_stone!(next_board, move.point)
+    place_stone!(next_board, player, move.point)
     newstring = next_board[move.point]
-    return num_liberties(newstring) == 0
+    return (num_liberties(newstring) == 0)
 end
 
 function does_move_violate_ko(game_state::GameState, player::Player, move::Move)::Bool
@@ -126,16 +152,9 @@ function does_move_violate_ko(game_state::GameState, player::Player, move::Move)
         return false
     end
     next_board = deepcopy(game_state.board)
-    place_stone!(next_board, move.point)
-    next_situation = (other(player), next_board)
-    past_state = game_state.previous_state
-    while past_state ≢ nothing
-        if (past_state.player, past_state.board) == next_situation
-            return true
-        end
-        past_state = past_state.previous_state
-    end
-    return false
+    place_stone!(next_board, player, move.point)
+    next_situation = (other(player), zobristhash(next_board))
+    return (next_situation in game_state.prev_hashes)
 end
 
 function is_valid_move(game_state::GameState, move::Move)::Bool
@@ -144,10 +163,9 @@ function is_valid_move(game_state::GameState, move::Move)::Bool
     elseif move.is_pass || move.is_resign
         return true
     else
-        ans = game_state.board[move.point] ≡ nothing &&
+        return game_state.board[move.point] ≡ nothing &&
             !is_move_self_capture(game_state, game_state.next_player, move) &&
             !does_move_violate_ko(game_state, game_state.next_player, move)
-        return ans
     end
 end
 

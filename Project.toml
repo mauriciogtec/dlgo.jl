@@ -4,5 +4,8 @@ authors = ["Mauricio Benjamin Garcia Tec <garciatec.mauricio@outlook.com>"]
 version = "0.1.0"
 
 [deps]
+ASTInterpreter2 = "e6d88f4b-b52a-544c-a8d3-7a4f12cb39c3"
+ArgParse = "c7e460c6-2fb9-53a9-8c5b-16f535851c63"
+DebuggerFramework = "67417a49-6d77-5db2-98c7-c13144130cd2"
 Revise = "295af30f-e4ad-537b-8983-00126c2a3abe"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

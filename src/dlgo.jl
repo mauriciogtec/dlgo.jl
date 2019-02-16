@@ -1,9 +1,10 @@
 module dlgo
 
 include("gotypes.jl")
-include("goboard_slow.jl")
+include("zobrist.jl")
+include("goboard.jl")
 include("agent.jl")
 include("stringrep.jl")
+include("scoring.jl")
 
 end
-

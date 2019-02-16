@@ -2,7 +2,8 @@
 
 # import ..dlgo: Player, black, white, Move, Board
 
-board_cols()::String = "ABCDEFGHJKLMNOPQRST"
+const BOARDCOLS = "ABCDEFGHJKLMNOPQRST"
+const BOARDCOLSIDX = Dict(letter => i for (i, letter) in enumerate(BOARDCOLS))
 
 function stone_to_string(x::GoString)::String 
     if x.color ≡ black
@@ -22,7 +23,7 @@ function print_move(player::Player, move::Move)::Nothing
     elseif move.is_resign
         "resigns"
     else
-        string(col(move.point.col)) + string(move.point.row)
+        string(BOARDCOLS[move.point.col]) * string(move.point.row)
     end
 
     println(string(player), " ", move_str)
@@ -39,9 +40,15 @@ function print_board(board::Board)
         println(bump, r, line)
     end
 
-    println("\n   " * board_cols()[1:board.num_cols])
+    println("\n   " * BOARDCOLS[1:board.num_cols])
 end
 
 print_board(game_state::GameState) = print_board(game_state.board)
 
+function point_from_coords(coords::AbstractString)::Point
+    @assert length(coords) >= 2
+    col = BOARDCOLSIDX[coords[1]]
+    row = parse(Int, coords[2:end])
+    return Point(row, col)
+end
 # end
