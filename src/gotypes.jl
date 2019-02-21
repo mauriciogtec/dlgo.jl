@@ -31,7 +31,7 @@ pass_turn()::Move = Move((row=0, col=0), false, true, false)
 resign()::Move = Move((row=0, col=0), flase, false, true)
 
 # ----------------------
-IdType = UInt8
+IdType = UInt16
 
 struct GoString
     color::Player
