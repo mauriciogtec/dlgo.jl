@@ -7,7 +7,7 @@ using Base.Enums
     white = -1
 end
 other(player::Player)::Player = if (player == black) white elseif (player == white) black else void end
-mark(player::Player) = if (player == black) "x" elseif (player==white) "o" else "." end
+tostring(player::Player) = if (player == black) "x" elseif (player==white) "o" else "." end
 
 # ----------------------
 Point = NamedTuple{(:row, :col), Tuple{Int, Int}}
@@ -50,6 +50,7 @@ function merge!(receiver::GoString, sender::GoString)::Nothing
 end
 
 const EMPTY_STRING = GoString(void, Set{Point}(), Set{Point}())
+
 isvoid(s::GoString) = (s.color == void)
 copy(s::GoString) = isvoid(s) ? EMPTY_STRING : GoString(s.color, copy(s.stones), copy(s.liberties))
 show(io::IO, s::GoString) = print(io, mark(s.color))
