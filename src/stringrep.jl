@@ -5,17 +5,6 @@
 const BOARDCOLS = "ABCDEFGHJKLMNOPQRST"
 const BOARDCOLSIDX = Dict(letter => i for (i, letter) in enumerate(BOARDCOLS))
 
-function stone_to_string(x::GoString)::String 
-    if x.color ≡ black
-        return "x"
-    elseif x.color ≡ white
-        return "o"
-    else
-        throw(ArgumentError)
-    end
-end
-stone_to_string(x::Nothing)::String = "."
-
 
 function print_move(player::Player, move::Move)::Nothing
     move_str = if move.is_pass
@@ -34,8 +23,7 @@ function print_board(board::Board)
         bump = (r <= 9) ? " " : ""
         line = " "
         for c in 1:board.num_cols
-            stone = board[Point(r, c)]
-            line *= stone_to_string(stone)
+            line *= mark(board[r, c].color)
         end
         println(bump, r, line)
     end

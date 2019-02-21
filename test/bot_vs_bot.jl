@@ -28,12 +28,14 @@ function parse_commandline()
             help = "print results of game to command line"
             arg_type = Bool
             default = true
+        "--profile", "-p"
+            help = "profile shows time spent per call"
+            arg_type = Bool
+            default = false
     end
     return parse_args(s, as_symbols=true)
 end
 
-BOARD_SIZE = 5
-NUM_GAMES = 100
 
 function main(board_size::Int, num_games::Int, komi::Float64, verbose::Bool)
     verbose && println("Playing ", num_games, " game(s) with board size ", board_size, "x", board_size)
@@ -48,12 +50,18 @@ function main(board_size::Int, num_games::Int, komi::Float64, verbose::Bool)
             game = apply_move(game, move)
             nmoves += 1
         end
-        # result = compute_game_result(game, komi)
-        # verbose && println("Finished game ", it, " in " , nmoves, " moves with result ", result)
-        # verbose && print_board(game.board)
+        result = compute_game_result(game, komi)
+        verbose && println("Finished game ", it, " in " , nmoves, " moves with result ", result)
+        verbose && print_board(game.board)
     end
 end
 
 args = parse_commandline()
-@time @profile main(args[:board_size], args[:num_games], args[:komi], args[:verbose])
-Profile.print(format=:flat)
+@time begin
+    if args[:profile]
+        @profile main(args[:board_size], args[:num_games], args[:komi], args[:verbose])
+        Profile.print(format=:flat)
+    else
+        main(args[:board_size], args[:num_games], args[:komi], args[:verbose])
+    end
+end

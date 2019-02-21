@@ -4,7 +4,7 @@ using Pkg;
 Pkg.activate(".")
 
 using dlgo: RandomBot, Board, GameState, black, white
-using dlgo: new_game, apply_move, play, is_over, select_move
+using dlgo: new_game, apply_move, play, is_over, select_move, isvoid
 using dlgo: print_board, point_from_coords, print_move
 
 function main()
@@ -20,7 +20,7 @@ function main()
             print("-- ")
             human_move = readline(stdin)
             point = point_from_coords(strip(human_move))
-            while game.board[point] ≢ nothing
+            while 1isvoid(game.board[point])
                 println(game.board[point])
                 human_move = readline(stdin)
                 point = point_from_coords(strip(human_move))            

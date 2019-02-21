@@ -1,38 +1,34 @@
+import Base: copy, show, print
 using Base.Enums
 
 @enum Player begin
+    void = 0
     black = 1
-    white = 2
+    white = -1
 end
-other(player::Player)::Player = player == black ? white : black 
+other(player::Player)::Player = if (player == black) white elseif (player == white) black else void end
+mark(player::Player) = if (player == black) "x" elseif (player==white) "o" else "." end
 
 # ----------------------
-struct Point 
-    row::Int
-    col::Int
-end
+Point = NamedTuple{(:row, :col), Tuple{Int, Int}}
 
-up(p::Point)::Point = Point(p.row - 1, p.col)
-down(p::Point)::Point = Point(p.row + 1, p.col)
-left(p::Point)::Point = Point(p.row, p.col - 1)
-right(p::Point)::Point = Point(p.row, p.col + 1)
-nbrs(p::Point)::Vector{Point} = Point[up(p), down(p), left(p), right(p)]
+up(p::Point)::Point = (row = p.row - 1, col = p.col)
+down(p::Point)::Point = (row = p.row + 1, col = p.col)
+left(p::Point)::Point = (row = p.row, col = p.col - 1)
+right(p::Point)::Point = (row = p.row, col = p.col + 1)
+nbrs(p::Point)::Vector{Point} = [up(p), down(p), left(p), right(p)]
 
 # ----------------------
 struct Move
-    point::Union{Nothing, Point}
+    point::Point
     is_play::Bool
     is_pass::Bool
     is_resign::Bool
-
-    # constructor with defaults for Move
-    Move(;point::Union{Nothing, Point} = nothing, is_pass=false, is_resign=false) =
-        new(point, point ≢ nothing, is_pass, is_resign)
 end
 
-play(p::Point)::Move = Move(point = p)
-pass_turn()::Move = Move(is_pass=true)
-resign()::Move = Move(is_resign=true)
+play(point::Point)::Move = Move(point, true, false, false)
+pass_turn()::Move = Move((row=0, col=0), false, true, false)
+resign()::Move = Move((row=0, col=0), flase, false, true)
 
 # ----------------------
 struct GoString
@@ -41,9 +37,9 @@ struct GoString
     liberties::Set{Point}
 end
 
-remove_liberty!(str::GoString, p::Point)::Nothing = (delete!(str.liberties, p); nothing)
-add_liberty!(str::GoString, p::Point)::Nothing = (push!(str.liberties, p); nothing)
-num_liberties(str::GoString)::Int = length(str.liberties)
+remove_liberty!(s::GoString, p::Point)::Nothing = (delete!(s.liberties, p); nothing)
+add_liberty!(s::GoString, p::Point)::Nothing = (push!(s.liberties, p); nothing)
+num_liberties(s::GoString)::Int = length(s.liberties)
 
 function merge!(receiver::GoString, sender::GoString)::Nothing
     @assert receiver.color ≡ sender.color
@@ -52,5 +48,11 @@ function merge!(receiver::GoString, sender::GoString)::Nothing
     setdiff!(receiver.liberties, receiver.stones)
     nothing
 end
+
+const EMPTY_STRING = GoString(void, Set{Point}(), Set{Point}())
+isvoid(s::GoString) = (s.color == void)
+copy(s::GoString) = isvoid(s) ? EMPTY_STRING : GoString(s.color, copy(s.stones), copy(s.liberties))
+show(io::IO, s::GoString) = print(io, mark(s.color))
+print(io::IO, s::GoString) = show(io, s)
 
 # end
