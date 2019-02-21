@@ -31,10 +31,13 @@ pass_turn()::Move = Move((row=0, col=0), false, true, false)
 resign()::Move = Move((row=0, col=0), flase, false, true)
 
 # ----------------------
+IdType = UInt8
+
 struct GoString
     color::Player
     stones::Set{Point}
     liberties::Set{Point}
+    id::IdType
 end
 
 remove_liberty!(s::GoString, p::Point)::Nothing = (delete!(s.liberties, p); nothing)
@@ -42,18 +45,21 @@ add_liberty!(s::GoString, p::Point)::Nothing = (push!(s.liberties, p); nothing)
 num_liberties(s::GoString)::Int = length(s.liberties)
 
 function merge!(receiver::GoString, sender::GoString)::Nothing
-    @assert receiver.color ≡ sender.color
+    @assert receiver.color === sender.color
     union!(receiver.stones, sender.stones)
     union!(receiver.liberties, sender.liberties)
     setdiff!(receiver.liberties, receiver.stones)
     nothing
 end
 
-const EMPTY_STRING = GoString(void, Set{Point}(), Set{Point}())
+const EMPTY_STRING = GoString(void, Set{Point}(), Set{Point}(), IdType(0))
 
 isvoid(s::GoString) = (s.color == void)
-copy(s::GoString) = isvoid(s) ? EMPTY_STRING : GoString(s.color, copy(s.stones), copy(s.liberties))
-show(io::IO, s::GoString) = print(io, mark(s.color))
+copy(s::GoString) = isvoid(s) ? EMPTY_STRING : GoString(s.color, copy(s.stones), copy(s.liberties), s.id)
+show(io::IO, s::GoString) = print(io, tosymbol(s.color))
 print(io::IO, s::GoString) = show(io, s)
 
-# end
+mutable struct GoStringBuffer
+    dict::Dict{IdType, GoString} 
+    lastid::IdType
+end

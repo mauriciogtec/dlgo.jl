@@ -20,7 +20,7 @@ function main()
             print("-- ")
             human_move = readline(stdin)
             point = point_from_coords(strip(human_move))
-            while 1isvoid(game.board[point])
+            while !isvoid(game.board[point])
                 println(game.board[point])
                 human_move = readline(stdin)
                 point = point_from_coords(strip(human_move))            
@@ -34,7 +34,4 @@ function main()
     end
 end
 
-
-if PROGRAM_FILE ==  @__FILE__ 
-    main()
-end
+main()

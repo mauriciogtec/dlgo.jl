@@ -1,30 +1,70 @@
 import Base: getindex, setindex!, ==, copy, show, print
 using Base.Enums
 
+
 mutable struct Board
     num_rows::Int
     num_cols::Int
-    _grid::Matrix{GoString}
+    _grid::Matrix{IdType} # points to the gostring id
+    _stringbuffer::GoStringBuffer # points the id to string
     _hash::Int
-    Board(num_rows::Int, num_cols::Int) = begin
-        @assert num_rows >= 1
-        @assert num_cols >= 1
-        emptymat = [EMPTY_STRING for i in 1:num_rows, j in 1:num_cols]
-        new(num_rows, num_cols, emptymat, EMPTY_BOARD_HASH)
-    end
-    Board(num_rows::Int, num_cols::Int, grid::Matrix{GoString}, hash::Int) = 
-        new(num_rows, num_cols, grid, hash)
 end
-copy(board::Board) = Board(board.num_rows, board.num_cols, [copy(s) for s in board._grid], board._hash)
 
-Base.getindex(board::Board, p::Point)::GoString = board._grid[p.row, p.col]
-Base.getindex(board::Board, i::Int, j::Int)::GoString = board[(row=i, col=j)]
-Base.setindex!(board::Board, str::GoString, p::Point)::Nothing = (board._grid[p.row, p.col] = str; return)
+# External constructor
+function Board(num_rows::Int, num_cols::Int)::Board
+    emptymat = fill(0, num_rows, num_cols)
+    stringbuffer = GoStringBuffer(Dict(IdType(0) => EMPTY_STRING), IdType(0))
+    Board(num_rows, num_cols, emptymat, stringbuffer, EMPTY_BOARD_HASH)
+end
+
+# setters getters for dicts
+grid(board::Board)::Matrix{IdType} = board._grid
+is_on_grid(board::Board, p::Point)::Bool = checkbounds(Bool, grid(board), p.row, p.col)
+
+stringbuffer(board::Board)::GoStringBuffer = board._stringbuffer
+stringdict(board::Board)::Dict{IdType, GoString} = stringbuffer(board).dict
+getpointid(board::Board, i::Int, j::Int)::IdType = board._grid[i, j]
+getpointid(board::Board, p::Point)::IdType = getpointid(board, p.row, p.col)
+setpointid!(board::Board, id::IdType, i::Int, j::Int)::Nothing = (board._grid[i, j] = id; nothing)
+setpointid!(board::Board, id::IdType, p::Point)::Nothing = setpointid!(board, id, p.row, p.col)
+
+getstring(board::Board, id::IdType)::GoString = stringdict(board)[id]
+setstring!(board::Board, s::GoString, id::IdType)::Nothing = (setindex!(stringdict(board), s, id); nothing)
+newid!(board::Board)::IdType = stringbuffer(board).lastid += IdType(1)
+
+# advanced indexing (try not to use setindex)
+Base.getindex(board::Board, i::Int, j::Int)::GoString = getstring(board, getpointid(board, i, j))
+Base.getindex(board::Board, p::Point)::GoString = Base.getindex(board, p.row, p.col)
+Base.setindex!(board::Board, string::GoString, i::Int, j::Int)::Nothing = (setstring!(board, string, getpointid(board, i, j)); nothing)
+Base.setindex!(board::Board, string::GoString, p::Point)::Nothing = (Base.setindex!(board, string, p.row, p.col); nothing)
+
+# equality
 Base.:(==)(board1::Board, board2::Board)::Bool = (board1._grid == board2._grid)
 
-is_on_grid(board::Board, p::Point)::Bool = (1 <= p.row <= board.num_rows) && (1 <= p.col <= board.num_cols)
-updatehash!(board::Board, point::Point, player::Player)::Nothing = (board._hash ⊻= HASH_CODE[point.row, point.col, player]; nothing) # xor hash
+# hashing
 zobristhash(board::Board)::Int = board._hash
+update_hash!(board::Board, i::Int, j::Int, player::Player)::Int = board._hash ⊻= HASH_CODE[i, j, player]
+update_hash!(board::Board, p::Point, player::Player)::Int = update_hash!(board, p.row, p.col, player)
+
+# copymethods
+function copy(board::Board)::Board # useful for new iteration
+    sb = stringbuffer(board)
+    sbcopy = GoStringBuffer(Dict(k => copy(v) for (k, v) in sb.dict), sb.lastid)
+    gridcopy = copy(grid(board))
+    Board(board.num_rows, board.num_cols, gridcopy, sbcopy, zobristhash(board))
+end
+
+# function copyatpoint(board::Board, point::Point)::Board # useful for check valid move
+#     id = grid(board)[point.row, point.col]
+#     sb = stringbuffer(board)
+#     sbcopy = StringBuffer(Dict(i => (i == id ? copy(v) : v) for (i, v) in sb.dict), sb.lastid)
+#     gridcopy = copy(board._grid)
+#     Board(board.num_rows, board.num_cols, gridcopy, sbcopy, board._hash)
+# end
+
+function remove_point!(board::Board, p::Point)::Nothing
+    setpointid!(board, IdType(0), p)
+end
 
 function remove_string!(board::Board, string::GoString)::Nothing
     @assert !isvoid(string)
@@ -39,9 +79,11 @@ function remove_string!(board::Board, string::GoString)::Nothing
                 end
             end
         end
-        board[point] = EMPTY_STRING
-        updatehash!(board, point, string.color)
+        remove_point!(board, point)
+        update_hash!(board, point, string.color)
     end
+    delete!(stringdict(board), string.id)
+    nothing
 end
 
 function place_stone!(board::Board, player::Player, point::Point)::Nothing
@@ -65,17 +107,30 @@ function place_stone!(board::Board, player::Player, point::Point)::Nothing
         end
     end
 
-    newstring = GoString(player, Set([point]), Set(liberties))
 
-    for same_color_string in adjacent_same_color
-        merge!(newstring, same_color_string)
+    if isempty(adjacent_same_color)
+        newstring_id = newid!(board)
+        newstring = GoString(player, Set([point]), Set(liberties), newstring_id)
+        setstring!(board, newstring, newstring_id)
+        setpointid!(board, newstring_id, point)
+    else
+        samecolor_string = pop!(adjacent_same_color)
+        newstring_id = samecolor_string.id
+        newstring = GoString(player, Set([point]), Set(liberties), newstring_id)
+        merge!(samecolor_string, newstring)
+        setpointid!(board, newstring_id, point)
+
+        # if we have more neighbors merge to previously found nbr
+        for nbr_string in adjacent_same_color
+            merge!(samecolor_string, nbr_string)
+            for nbr_point in nbr_string.stones
+                setpointid!(board, newstring_id, nbr_point)
+            end
+            delete!(stringdict(board), nbr_string.id)
+        end
     end
 
-    for newstring_point in newstring.stones
-        board[newstring_point] = newstring
-    end
-    
-    updatehash!(board, point, player)
+    update_hash!(board, point, player)
     
     for opposite_color_string in adjacent_opposite_color
         remove_liberty!(opposite_color_string, point)
