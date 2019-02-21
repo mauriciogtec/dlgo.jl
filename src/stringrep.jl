@@ -15,7 +15,7 @@ function print_move(player::Player, move::Move)::Nothing
         string(BOARDCOLS[move.point.col]) * string(move.point.row)
     end
 
-    println(string(player), " ", move_str)
+    println(tosymbol(player), " ", move_str)
 end
 
 function print_board(board::Board)
@@ -23,7 +23,7 @@ function print_board(board::Board)
         bump = (r <= 9) ? " " : ""
         line = " "
         for c in 1:board.num_cols
-            line *= mark(board[r, c].color)
+            line *= tosymbol(board[r, c].color)
         end
         println(bump, r, line)
     end

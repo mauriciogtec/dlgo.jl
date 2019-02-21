@@ -7,7 +7,7 @@ using Base.Enums
     white = -1
 end
 other(player::Player)::Player = if (player == black) white elseif (player == white) black else void end
-tostring(player::Player) = if (player == black) "x" elseif (player==white) "o" else "." end
+tosymbol(player::Player) = if (player == black) "x" elseif (player==white) "o" else "." end
 
 # ----------------------
 Point = NamedTuple{(:row, :col), Tuple{Int, Int}}
