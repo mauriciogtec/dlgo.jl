@@ -3,9 +3,8 @@ using Revise
 using Pkg; 
 Pkg.activate(".")
 
-using dlgo: RandomBot, Board, GameState, black, white
-using dlgo: new_game, apply_move, play, is_over, select_move, isvoid
-using dlgo: print_board, point_from_coords, print_move
+using dlgo
+using dlgo.Agent
 
 function main()
     board_size = 5
