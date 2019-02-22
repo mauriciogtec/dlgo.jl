@@ -224,4 +224,15 @@ function is_valid_move(game_state::GameState, move::Move)::Bool
     end
 end
 
-# end
+function legal_moves(game_state::GameState)::Vector{Move}
+    moves = [pass_turn()]
+    for r in 1:game_state.board.num_rows
+        for c in 1:game_state.board.num_cols
+            move = play((row=r, col=c))
+            if is_valid_move(game_state, move)
+                push!(moves, move)
+            end
+        end
+    end
+    return moves
+end

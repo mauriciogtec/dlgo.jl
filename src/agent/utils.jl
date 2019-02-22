@@ -33,5 +33,3 @@ function is_point_an_eye(board::Board, point::Point, color::Player)::Bool
 
     return ans
 end
-
-end

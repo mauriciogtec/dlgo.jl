@@ -51,6 +51,7 @@ struct GameResult
 end
 
 score(result::GameResult) = result.b  - result.w - result.komi
+winnercolor(result::GameResult) = score(result) > 0 ? black : white
 
 function Base.show(io::IO, result::GameResult) 
     s = score(result)

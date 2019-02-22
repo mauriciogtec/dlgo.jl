@@ -28,7 +28,7 @@ end
 
 play(point::Point)::Move = Move(point, true, false, false)
 pass_turn()::Move = Move((row=0, col=0), false, true, false)
-resign()::Move = Move((row=0, col=0), flase, false, true)
+resign()::Move = Move((row=0, col=0), false, false, true)
 
 # ----------------------
 IdType = UInt16
