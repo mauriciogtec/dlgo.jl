@@ -1,7 +1,7 @@
 module dlgo
 
 export Player, black, white, void
-export other, isvoid, nbrs
+export other, isvoid, nbrs, zobristhash
 export Point, Move, GoString, GoStringBuffer, IdType, Board, GameState,
        Territory, TerritoryStatus, GameResult
 export getindex, setindex!, ==, is_on_grid
@@ -10,12 +10,14 @@ export grid, stringdict, stringbuffer, getpointid, setpointid!, getstring,
        setstring!, place_stone!, remove_string!, remove_point!
 export tosymbol, print_board, point_from_coords, print_move
 export evaluate_territory, score, winnercolor, compute_game_result
+export features
 
 include("gotypes.jl")
 include("zobrist.jl")
 include("goboard.jl")
 include("stringrep.jl")
 include("scoring.jl")
+include("features.jl")
 
 include("agent/agent.jl")
 

@@ -1,4 +1,9 @@
 
+abstract type AbstractAgent 
+end
+select_move(agent::AbstractAgent, game_state::GameState) = error("unimplemented")
+
+
 function is_point_an_eye(board::Board, point::Point, color::Player)::Bool
     if !isvoid(board[point])
         return false
